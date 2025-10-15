@@ -5,3 +5,7 @@ File for mentor's seminar
 ## Exercise 3 ##
 
 New update
+
+## Exercise 4.1 ##
+
+Conflict???
