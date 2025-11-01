@@ -1,0 +1,25 @@
+#!/bin/bash
+
+read -p "Введите число: " num
+
+if ! [[ "$num" =~ ^-?[0-9]+$ ]]; then
+    echo "Ошибка: введите целое число"
+    exit 1
+fi
+
+if [ "$num" -gt 0 ]; then
+    echo "Вы ввели положительное число."
+elif [ "$num" -lt 0 ]; then
+    echo "Вы ввели отрицательное число."
+else
+    echo "Вы ввели ноль."
+fi
+
+if [ "$num" -gt 0 ]; then
+    echo "Подсчёт от 1 до $num:"
+    count=1
+    while [ "$count" -le "$num" ]; do
+        echo "$count"
+        ((count++))
+    done
+fi
