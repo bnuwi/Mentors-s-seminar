@@ -1,0 +1,19 @@
+version: '3'
+services:
+  web:
+    image: jiexxx/myapp-web:latest
+    ports:
+      - "5001:5001"
+    depends_on:
+      - db
+  db:
+    image: postgres:13
+    environment:
+      POSTGRES_PASSWORD: mysecretpassword
+      POSTGRES_DB: mydb
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+
+volumes:
+  pgdata:
