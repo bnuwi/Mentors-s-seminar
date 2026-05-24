@@ -86,7 +86,7 @@ oil-analytics-pipeline/
 
 Поля `production` включают:
 
-- нефть (`oil_ton` / `oilton`);
+- нефть;
 - газ;
 - воду;
 - энергопотребление;
@@ -98,8 +98,8 @@ oil-analytics-pipeline/
 
 Основные таблицы:
 
-- `well_telemetry` / `welltelemetry` — почасовая телеметрия оборудования;
-- `well_targets` / `welltargets` — целевой или фактический суточный дебит для ML-задачи.
+- `well_telemetry` — почасовая телеметрия оборудования;
+- `well_targets` — целевой или фактический суточный дебит для ML-задачи.
 
 Используются признаки:
 
@@ -115,8 +115,8 @@ oil-analytics-pipeline/
 Основные таблицы:
 
 - `pumps`;
-- `pump_sensors` / `pumpsensors`;
-- `pump_failures` / `pumpfailures`.
+- `pump_sensors`;
+- `pump_failures`.
 
 Используются признаки:
 
