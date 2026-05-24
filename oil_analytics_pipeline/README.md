@@ -222,15 +222,7 @@ docker compose up -d --build
 #### Вариант A. Через терминал контейнера Jupyter
 
 ```bash
-docker exec -it oil_jupyter bash
-cd /home/jovyan/work/etl
-```
-
-Далее запускать по порядку:
-
-```bash
-python extract_to_minio.py
-python transform_curated.py
+docker exec -it oil_jupyter bash -c "cd /home/jovyan/work/etl && python extract_to_minio.py && python transform_curated.py"
 ```
 
 ### Порядок выполнения
@@ -263,6 +255,10 @@ docker logs oil_jupyter
 3. `03_ml_rate_forecast.ipynb`
 4. `04_pump_anomaly_detection.ipynb`
 5. `05_logistics_analysis.ipynb`
+
+```bash
+docker exec -it oil_jupyter bash -c "cd /home/jovyan/work/notebooks && jupyter nbconvert --to notebook --execute --inplace 01_data_check.ipynb && jupyter nbconvert --to notebook --execute --inplace 02_production_analytics.ipynb && jupyter nbconvert --to notebook --execute --inplace 03_ml_rate_forecast.ipynb && jupyter nbconvert --to notebook --execute --inplace 04_pump_anomaly_detection.ipynb && jupyter nbconvert --to notebook --execute --inplace 05_logistics_analysis.ipynb"
+```
 
 ---
 
@@ -569,6 +565,10 @@ superset fab create-admin \
   --lastname User \
   --email admin@example.com \
   --password admin123
+```
+
+```bash
+docker exec -it oil_superset bash -c "superset init"
 ```
 
 После этого при входе в веб-интерфейс можно использовать:
