@@ -215,19 +215,60 @@ docker compose up -d --build
 - Jupyter: `http://localhost:8888`
 - Superset: `http://localhost:8088`
 
+### 4. Запустить ETL-скрипты
+
+Скрипты можно запускать либо из Jupyter, либо напрямую внутри контейнера `oil_jupyter`.
+
+#### Вариант A. Через терминал контейнера Jupyter
+
+```bash
+docker exec -it oil_jupyter bash
+cd /home/jovyan/work/etl
+```
+
+Далее запускать по порядку:
+
+```bash
+python extract_to_minio.py
+python transform_curated.py
+```
+
+### Порядок выполнения
+
+- `extract_to_minio.py` — считывает исходные таблицы из PostgreSQL и сохраняет их в MinIO в слой `raw` / `staging`;
+- `transform_curated.py` — очищает данные, обрабатывает NULL, выбросы, строит агрегаты и сохраняет curated-таблицы;
+
+### 4. Проверить, что данные появились в MinIO
+
+После выполнения ETL в bucket'ах `raw`, `staging`, `curated` должны появиться parquet/csv-файлы.
+
+MinIO Console:
+- [http://localhost:9001](http://localhost:9001)
+
+### 5. Открыть Jupyter и выполнить ноутбуки
+
+Jupyter:
+- [http://localhost:8888](http://localhost:8888)
+
+Если требуется token, его можно получить из логов:
+
+```bash
+docker logs oil_jupyter
+```
+
+Далее рекомендуется выполнить ноутбуки в таком порядке:
+
+1. `01_data_check.ipynb`
+2. `02_production_analytics.ipynb`
+3. `03_ml_rate_forecast.ipynb`
+4. `04_pump_anomaly_detection.ipynb`
+5. `05_logistics_analysis.ipynb`
+
 ---
 
 ## Инициализация БД
 
 SQL-скрипты монтируются в `docker-entrypoint-initdb.d`, поэтому при первом запуске PostgreSQL автоматически создаются таблицы и загружаются исходные данные.
-
-Рекомендуемое разбиение:
-
-- `00_create_schema.sql` — создание таблиц;
-- `01_load_wells_production.sql` — загрузка `wells` и `production`;
-- `02_load_well_targets_telemetry.sql` — загрузка телеметрии и target-таблицы;
-- `03_load_pumps_failures.sql` — насосы, сенсоры, отказы;
-- `04_load_deliveries.sql` — логистика.
 
 ---
 
