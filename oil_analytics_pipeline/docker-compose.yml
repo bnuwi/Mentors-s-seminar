@@ -1,0 +1,125 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: oil_postgres
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./sql:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  minio:
+    image: minio/minio:latest
+    container_name: oil_minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    env_file:
+      - .env
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    ports:
+      - "${MINIO_API_PORT}:9000"
+      - "${MINIO_CONSOLE_PORT}:9001"
+    volumes:
+      - minio_data:/data
+
+  minio-init:
+    image: minio/mc:latest
+    container_name: oil_minio_init
+    depends_on:
+      - minio
+    env_file:
+      - .env
+    volumes:
+      - ./init/minio:/init
+    entrypoint: >
+      /bin/sh -c "
+      sleep 10;
+      mc alias set local http://minio:9000 ${MINIO_ROOT_USER} ${MINIO_ROOT_PASSWORD};
+      mc mb -p local/${S3_BUCKET_RAW} || true;
+      mc mb -p local/${S3_BUCKET_STAGING} || true;
+      mc mb -p local/${S3_BUCKET_CURATED} || true;
+      mc anonymous set download local/${S3_BUCKET_RAW} || true;
+      mc anonymous set download local/${S3_BUCKET_STAGING} || true;
+      mc anonymous set download local/${S3_BUCKET_CURATED} || true;
+      "
+
+  jupyter:
+    build:
+      context: .
+      dockerfile: jupyter/Dockerfile
+    container_name: oil_jupyter
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "${JUPYTER_PORT}:8888"
+    volumes:
+      - ./etl:/home/jovyan/work/etl
+      - ./notebooks:/home/jovyan/work/notebooks
+      - ./models:/home/jovyan/work/models
+      - ./sql:/home/jovyan/work/sql
+    environment:
+      JUPYTER_ENABLE_LAB: "yes"
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      S3_ENDPOINT: ${S3_ENDPOINT}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      MINIO_ENDPOINT: minio:9000
+      MINIO_SECURE: "false"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_started
+
+  superset:
+    build:
+      context: .
+      dockerfile: superset/Dockerfile
+    container_name: oil_superset
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "${SUPERSET_PORT}:8088"
+    environment:
+      SUPERSET_SECRET_KEY: supersecretkey
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: >
+      /bin/sh -c "
+      superset db upgrade &&
+      superset fab create-admin
+        --username admin
+        --firstname Superset
+        --lastname Admin
+        --email admin@example.com
+        --password admin || true &&
+      superset init &&
+      superset run -h 0.0.0.0 -p 8088
+      "
+
+volumes:
+  postgres_data:
+  minio_data:
